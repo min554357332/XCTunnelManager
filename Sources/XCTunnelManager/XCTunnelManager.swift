@@ -18,6 +18,7 @@ public enum NEStatus: Int,Sendable {
     case network_availability_testing = 600
     case network_unavailable = 700
     case realConnected = 800
+    case realFaile = 900
 }
 
 public actor XCTunnelManager {
