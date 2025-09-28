@@ -1,13 +1,13 @@
 import Foundation
 @preconcurrency import NetworkExtension
-import Combine
+@preconcurrency import Combine
 
 public enum NEErr: Error {
     case notFound
     case connectFailled(Error)
 }
 
-public enum NEStatus: Int {
+public enum NEStatus: Int,Sendable {
     case invalid = 0
     case disconnected = 1
     case connecting = 2
@@ -17,44 +17,44 @@ public enum NEStatus: Int {
     
     case network_availability_testing = 600
     case network_unavailable = 700
-    
+    case realConnected = 800
 }
 
 public actor XCTunnelManager {
     public static let share = XCTunnelManager()
     
     @MainActor
-    static let statusSubject = PassthroughSubject<NEStatus, Never>()
+    public let statusSubject = PassthroughSubject<NEStatus, Never>()
     
     @MainActor
-    static let durSubject = PassthroughSubject<Int, Never>()
+    public let durSubject = PassthroughSubject<Int, Never>()
     
     @MainActor
-    static let avgSubject = PassthroughSubject<Int, Never>()
+    public let avgSubject = PassthroughSubject<Int, Never>()
     
     @MainActor
-    static var status: NEStatus = .disconnected {
+    var status: NEStatus = .disconnected {
         didSet {
-            if oldValue != XCTunnelManager.status {
-                XCTunnelManager.statusSubject.send(XCTunnelManager.status)
+            if oldValue != self.status {
+                self.statusSubject.send(self.status)
             }
         }
     }
     
     @MainActor
-    static var dur = 0 {
+    var dur = 0 {
         didSet {
-            if oldValue != XCTunnelManager.dur {
-                XCTunnelManager.durSubject.send(XCTunnelManager.dur)
+            if oldValue != self.dur {
+                self.durSubject.send(self.dur)
             }
         }
     }
     
     @MainActor
-    static var avg = 0 {
+    var avg = 0 {
         didSet {
-            if oldValue != XCTunnelManager.avg {
-                XCTunnelManager.avgSubject.send(XCTunnelManager.avg)
+            if oldValue != self.avg {
+                self.avgSubject.send(self.avg)
             }
         }
     }
@@ -105,6 +105,32 @@ public extension XCTunnelManager {
         }
         try await self.save(manager)
     }
+
+    @MainActor
+    func setStatus(_ status: NEStatus) async {
+        self.status = status
+    }
+    
+    @MainActor
+    func getStatus() async -> NEStatus {
+        return self.status
+    }
+    
+    @MainActor
+    func statusAsyncStream(stopCondition: NEStatus) -> AsyncStream<NEStatus> {
+        return AsyncStream { continuation in
+            let publisher = self.statusSubject.eraseToAnyPublisher()
+            let cancellable = publisher.sink { status in
+                continuation.yield(status)
+                if status == stopCondition {
+                    continuation.finish()
+                }
+            }
+            continuation.onTermination = { _ in
+                cancellable.cancel()
+            }
+        }
+    }
 }
 
 private extension XCTunnelManager {
@@ -126,9 +152,9 @@ private extension XCTunnelManager {
     func statusUpdate(_ new: NEVPNStatus) async {
         let new_status = NEStatus(rawValue: new.rawValue) ?? .invalid
         if new_status == .connected {
-            XCTunnelManager.status = .network_availability_testing
+            await self.setStatus(.network_availability_testing)
         } else {
-            XCTunnelManager.status = new_status
+            await self.setStatus(new_status)
         }
     }
 }
