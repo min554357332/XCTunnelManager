@@ -1,0 +1,153 @@
+import Foundation
+@preconcurrency import NetworkExtension
+import Combine
+
+public enum NEErr: Error {
+    case notFound
+    case connectFailled(Error)
+}
+
+public enum NEStatus: Int {
+    case invalid = 0
+    case disconnected = 1
+    case connecting = 2
+    case connected = 3
+    case reasserting = 4
+    case disconnecting = 5
+    
+    case network_availability_testing = 600
+    case network_unavailable = 700
+    
+}
+
+public actor XCTunnelManager {
+    public static let share = XCTunnelManager()
+    
+    @MainActor
+    static let statusSubject = PassthroughSubject<NEStatus, Never>()
+    
+    @MainActor
+    static let durSubject = PassthroughSubject<Int, Never>()
+    
+    @MainActor
+    static let avgSubject = PassthroughSubject<Int, Never>()
+    
+    @MainActor
+    static var status: NEStatus = .disconnected {
+        didSet {
+            if oldValue != XCTunnelManager.status {
+                XCTunnelManager.statusSubject.send(XCTunnelManager.status)
+            }
+        }
+    }
+    
+    @MainActor
+    static var dur = 0 {
+        didSet {
+            if oldValue != XCTunnelManager.dur {
+                XCTunnelManager.durSubject.send(XCTunnelManager.dur)
+            }
+        }
+    }
+    
+    @MainActor
+    static var avg = 0 {
+        didSet {
+            if oldValue != XCTunnelManager.avg {
+                XCTunnelManager.avgSubject.send(XCTunnelManager.avg)
+            }
+        }
+    }
+    
+    private init() {
+        NotificationCenter.default.addObserver(forName: .NEVPNStatusDidChange, object: nil, queue: .main) { notif in
+            let new = (notif.object as? NEVPNConnection)?.status ?? .disconnected
+            Task {
+                await XCTunnelManager.share.statusUpdate(new)
+            }
+        }
+    }
+    
+    private var manager: NEVPNManager?
+}
+
+public extension XCTunnelManager {
+    func getManager() async throws -> NEVPNManager {
+        if let manager = self.manager {
+            try await self.save(manager)
+            return manager
+        }
+        try await self.load()
+        if let manager = self.manager {
+            try await self.save(manager)
+            return manager
+        }
+        throw NEErr.notFound
+    }
+    
+    func load(_ isCreate: Bool = true) async throws {
+        let managers = try await NETunnelProviderManager.loadAllFromPreferences()
+        var manager = managers.last
+        if manager == nil && isCreate {
+            manager = try await self.create()
+        }
+        try await self.save(manager)
+        manager = try await NETunnelProviderManager.loadAllFromPreferences().last
+        self.manager = manager
+        await self.statusUpdate(manager?.connection.status ?? .invalid)
+    }
+    
+    func enable() async throws {
+        let manager = if let m = self.manager {
+            m
+        } else {
+            try await self.getManager()
+        }
+        try await self.save(manager)
+    }
+}
+
+private extension XCTunnelManager {
+    func create() async throws -> NETunnelProviderManager {
+        let manager = NETunnelProviderManager()
+        let p = NETunnelProviderProtocol()
+        p.serverAddress = "这里写IP"
+        p.providerBundleIdentifier = "这里写Tunnel进程ID"
+        manager.protocolConfiguration = p
+        return manager
+    }
+    
+    func save(_ manager: NEVPNManager?) async throws {
+        manager?.isEnabled = true
+        try await manager?.saveToPreferences()
+    }
+    
+    @MainActor
+    func statusUpdate(_ new: NEVPNStatus) async {
+        let new_status = NEStatus(rawValue: new.rawValue) ?? .invalid
+        if new_status == .connected {
+            XCTunnelManager.status = .network_availability_testing
+        } else {
+            XCTunnelManager.status = new_status
+        }
+    }
+}
+
+public extension XCTunnelManager {
+    /// 传加密的
+    func connect(_ node: String) async throws {
+        let manager = try await self.getManager()
+        try await self.save(manager)
+        try manager.connection.startVPNTunnel(options: ["node": node as NSString])
+    }
+    
+    func stop() async throws {
+        try await self.getManager().connection.stopVPNTunnel()
+    }
+    
+    func stopAll() async throws {
+        let manager = try await self.getManager()
+        try await self.save(manager)
+        manager.connection.stopVPNTunnel()
+    }
+}
