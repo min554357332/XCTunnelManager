@@ -138,8 +138,10 @@ private extension XCTunnelManager {
     func create() async throws -> NETunnelProviderManager {
         let manager = NETunnelProviderManager()
         let p = NETunnelProviderProtocol()
-        p.serverAddress = "这里写IP"
-        p.providerBundleIdentifier = "这里写Tunnel进程ID"
+        // p.serverAddress = "这里写IP"
+        // p.providerBundleIdentifier = "这里写Tunnel进程ID"
+        p.serverAddress = "109.123.230.51"
+        p.providerBundleIdentifier = "com.unlimitedr.tunnel.main.ex"
         manager.protocolConfiguration = p
         return manager
     }
