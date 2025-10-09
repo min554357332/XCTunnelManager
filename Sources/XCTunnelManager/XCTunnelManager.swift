@@ -170,6 +170,12 @@ public extension XCTunnelManager {
         try manager.connection.startVPNTunnel(options: ["node": node as NSString])
     }
     
+    func reload(_ node: String) async throws {
+        guard let data = node.data(using: .utf8) else { throw NSError(domain: "reload err", code: -1) }
+        let manager = try await self.getManager()
+        try (manager.connection as? NETunnelProviderSession)?.sendProviderMessage(data)
+    }
+    
     func stop() async throws {
         try await self.getManager().connection.stopVPNTunnel()
     }
