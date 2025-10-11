@@ -6,8 +6,7 @@ import PackageDescription
 let package = Package(
     name: "XCTunnelManager",
     platforms: [
-        .iOS(.v13),
-        .macOS(.v10_15),
+        .iOS(.v15),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -16,11 +15,15 @@ let package = Package(
             targets: ["XCTunnelManager"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/min554357332/XCEvents.git", .upToNextMajor(from: "0.0.1"))
+    ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "XCTunnelManager"
+            name: "XCTunnelManager",
+            dependencies: [
+                .product(name: "XCEvents", package: "XCEvents", condition: .when(platforms: [.iOS]))
+            ],
         ),
         .testTarget(
             name: "XCTunnelManagerTests",

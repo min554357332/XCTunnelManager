@@ -1,6 +1,7 @@
 import Foundation
 @preconcurrency import NetworkExtension
 @preconcurrency import Combine
+import XCEvents
 
 public enum NEErr: Error {
     case notFound
@@ -93,6 +94,7 @@ public extension XCTunnelManager {
             manager = try await self.create()
         }
         try await self.save(manager)
+        Events.connect_session_start.fire()
         manager = try await NETunnelProviderManager.loadAllFromPreferences().last
         self.manager = manager
         await self.statusUpdate(manager?.connection.status ?? .invalid)
@@ -136,10 +138,9 @@ public extension XCTunnelManager {
 
 private extension XCTunnelManager {
     func create() async throws -> NETunnelProviderManager {
+        Events.connect_session_start_before.fire()
         let manager = NETunnelProviderManager()
         let p = NETunnelProviderProtocol()
-        // p.serverAddress = "这里写IP"
-        // p.providerBundleIdentifier = "这里写Tunnel进程ID"
         p.serverAddress = "109.123.230.51"
         p.providerBundleIdentifier = "com.unlimitedr.tunnel.main.ex"
         manager.protocolConfiguration = p
