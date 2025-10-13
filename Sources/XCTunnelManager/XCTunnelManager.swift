@@ -178,6 +178,7 @@ public extension XCTunnelManager {
     }
     
     func stop() async throws {
+        Events.disconnect.fire()
         try await self.getManager().connection.stopVPNTunnel()
     }
     
