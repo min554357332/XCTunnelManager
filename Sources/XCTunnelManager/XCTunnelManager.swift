@@ -183,6 +183,7 @@ public extension XCTunnelManager {
     }
     
     func stopAll() async throws {
+        Events.disconnect.fire()
         let manager = try await self.getManager()
         try await self.save(manager)
         manager.connection.stopVPNTunnel()
