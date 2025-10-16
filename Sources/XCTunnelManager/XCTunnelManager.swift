@@ -205,18 +205,16 @@ public extension XCTunnelManager {
     }
     
     func stop() async throws {
-        Events.disconnect.fire()
         try await self.getManager().connection.stopVPNTunnel()
         let stream = XCTunnelManager.asyncStatusStream()
         for await status in stream {
-            if status == .disconnected {
+            if status == .disconnected || status == .invalid {
                 return
             }
         }
     }
     
     func stopAll() async throws {
-        Events.disconnect.fire()
         let manager = try await self.getManager()
         try await self.save(manager)
         manager.connection.stopVPNTunnel()
