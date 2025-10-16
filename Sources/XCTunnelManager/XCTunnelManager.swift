@@ -109,7 +109,9 @@ public extension XCTunnelManager {
             manager = try await self.create()
         }
         try await self.save(manager)
-        Events.connect_session_start.fire()
+        if isCreate {
+            Events.connect_session_start.fire()
+        }
         manager = try await NETunnelProviderManager.loadAllFromPreferences().last
         self.manager = manager
         await self.statusUpdate(manager?.connection.status ?? .invalid)
