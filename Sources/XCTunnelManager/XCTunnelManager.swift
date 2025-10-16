@@ -86,6 +86,11 @@ public actor XCTunnelManager {
             continuation.onTermination = { _ in
                 NotificationCenter.default.removeObserver(observer)
             }
+            
+            Task {
+                let status = await XCTunnelManager.share.manager?.connection.status ?? .invalid
+                continuation.yield(status)
+            }
         }
     }
 }
@@ -193,6 +198,7 @@ private extension XCTunnelManager {
 public extension XCTunnelManager {
     /// 传加密的
     func connect(_ node: String) async throws {
+        
         let manager = try await self.getManager(true)
         try await self.save(manager)
         try manager.connection.startVPNTunnel(options: ["node": node as NSString])
@@ -200,6 +206,8 @@ public extension XCTunnelManager {
         for await status in stream {
             if status == .connected {
                 return
+            } else if status == .disconnected || status == .invalid {
+                throw NSError(domain: "Connect falie", code: -1)
             }
         }
     }
