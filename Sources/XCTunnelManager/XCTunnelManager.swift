@@ -88,6 +88,7 @@ public actor XCTunnelManager {
             }
             
             Task {
+                try await Task.sleep(nanoseconds: 500_000_000)
                 let status = await XCTunnelManager.share.manager?.connection.status ?? .invalid
                 continuation.yield(status)
             }
@@ -207,6 +208,7 @@ public extension XCTunnelManager {
             if status == .connected {
                 return
             } else if status == .disconnected || status == .invalid {
+                try await self.stop()
                 throw NSError(domain: "Connect falie", code: -1)
             }
         }
