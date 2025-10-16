@@ -44,7 +44,7 @@ public actor XCTunnelManager {
     public let avgSubject = PassthroughSubject<Int, Never>()
     
     @MainActor
-    var sysStatus: NEVPNStatus = .disconnected
+    public var sysStatus: NEVPNStatus = .disconnected
     
     @MainActor
     var status: NEStatus = .disconnected {
