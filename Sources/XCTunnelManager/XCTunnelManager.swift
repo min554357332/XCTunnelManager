@@ -93,12 +93,10 @@ public actor XCTunnelManager {
 public extension XCTunnelManager {
     func getManager(_ isCreate: Bool = false) async throws -> NEVPNManager {
         if let manager = self.manager {
-            try await self.save(manager)
             return manager
         }
         try await self.load(isCreate)
         if let manager = self.manager {
-            try await self.save(manager)
             return manager
         }
         throw NEErr.notFound
