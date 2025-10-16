@@ -142,14 +142,14 @@ public extension XCTunnelManager {
     
     @MainActor
     func getStatus() async -> NEStatus {
-//        return self.status
-        do {
-            let status = try await self.getManager().connection.status
-            let nestatus = NEStatus(rawValue: status.rawValue) ?? .disconnected
-            return nestatus
-        } catch {
-            return self.status
-        }
+        return self.status
+//        do {
+//            let status = try await self.getManager().connection.status
+//            let nestatus = NEStatus(rawValue: status.rawValue) ?? .disconnected
+//            return nestatus
+//        } catch {
+//            return self.status
+//        }
     }
     
     @MainActor
