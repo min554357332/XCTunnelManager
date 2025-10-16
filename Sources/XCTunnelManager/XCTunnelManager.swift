@@ -49,7 +49,7 @@ public actor XCTunnelManager {
     public var sysStatus: NEVPNStatus = .disconnected
     
     @MainActor
-    var status: NEStatus = .disconnected {
+    var status: NEStatus = .invalid {
         didSet {
             if oldValue != self.status {
                 self.statusSubject.send(self.status)
