@@ -196,6 +196,12 @@ public extension XCTunnelManager {
         let manager = try await self.getManager(true)
         try await self.save(manager)
         try manager.connection.startVPNTunnel(options: ["node": node as NSString])
+        let stream = XCTunnelManager.asyncStatusStream()
+        for await status in stream {
+            if status == .connected {
+                return
+            }
+        }
     }
     
     func reload(_ node: String) async throws {
