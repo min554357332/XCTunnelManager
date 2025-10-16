@@ -141,7 +141,7 @@ private extension XCTunnelManager {
         Events.connect_session_start_before.fire()
         let manager = NETunnelProviderManager()
         let p = NETunnelProviderProtocol()
-        p.serverAddress = "109.123.230.51"
+        p.serverAddress = "UnlimitedVPNMaster"
         p.providerBundleIdentifier = "com.unlimitedr.tunnel.main.ex"
         manager.protocolConfiguration = p
         return manager
