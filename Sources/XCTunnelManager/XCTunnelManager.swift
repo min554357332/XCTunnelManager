@@ -9,17 +9,26 @@ public enum NEErr: Error {
 }
 
 public enum NEStatus: Int,Sendable {
-    case invalid = 0
-    case disconnected = 1
-    case connecting = 2
-    case connected = 3
-    case reasserting = 4
-    case disconnecting = 5
+//    case invalid = 0
+//    case disconnected = 1
+//    case connecting = 2
+//    case connected = 3
+//    case reasserting = 4
+//    case disconnecting = 5
+//    
+//    case network_availability_testing = 600
+//    case network_unavailable = 700
+//    case realConnected = 800
+//    case realFaile = 900
     
-    case network_availability_testing = 600
-    case network_unavailable = 700
-    case realConnected = 800
-    case realFaile = 900
+    case disconnecting
+    case disconnected
+    
+    case connecting
+    case connected
+    
+    case realConnected
+    case realDisconnected
 }
 
 public actor XCTunnelManager {
@@ -33,6 +42,9 @@ public actor XCTunnelManager {
     
     @MainActor
     public let avgSubject = PassthroughSubject<Int, Never>()
+    
+    @MainActor
+    var sysStatus: NEVPNStatus = .disconnected
     
     @MainActor
     var status: NEStatus = .disconnected {
@@ -120,10 +132,10 @@ public extension XCTunnelManager {
         }
         manager = try await NETunnelProviderManager.loadAllFromPreferences().last
         self.manager = manager
-        await self.statusUpdate(manager?.connection.status ?? .invalid)
         let status = self.manager?.connection.status ?? .invalid
-        let nestatus = NEStatus(rawValue: status.rawValue) ?? .invalid
-        await self.setStatus(nestatus)
+        if status == .disconnected || status == .invalid {
+            await self.setStatus(.realDisconnected)
+        }
     }
     
     func enable() async throws {
@@ -143,13 +155,6 @@ public extension XCTunnelManager {
     @MainActor
     func getStatus() async -> NEStatus {
         return self.status
-//        do {
-//            let status = try await self.getManager().connection.status
-//            let nestatus = NEStatus(rawValue: status.rawValue) ?? .disconnected
-//            return nestatus
-//        } catch {
-//            return self.status
-//        }
     }
     
     @MainActor
@@ -187,12 +192,7 @@ private extension XCTunnelManager {
     
     @MainActor
     func statusUpdate(_ new: NEVPNStatus) async {
-        let new_status = NEStatus(rawValue: new.rawValue) ?? .invalid
-        if new_status == .connected {
-            await self.setStatus(.network_availability_testing)
-        } else {
-            await self.setStatus(new_status)
-        }
+        self.sysStatus = new
     }
 }
 
