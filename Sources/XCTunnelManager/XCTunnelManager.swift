@@ -91,12 +91,12 @@ public actor XCTunnelManager {
 }
 
 public extension XCTunnelManager {
-    func getManager() async throws -> NEVPNManager {
+    func getManager(_ isCreate: Bool = false) async throws -> NEVPNManager {
         if let manager = self.manager {
             try await self.save(manager)
             return manager
         }
-        try await self.load()
+        try await self.load(isCreate)
         if let manager = self.manager {
             try await self.save(manager)
             return manager
@@ -193,7 +193,7 @@ private extension XCTunnelManager {
 public extension XCTunnelManager {
     /// 传加密的
     func connect(_ node: String) async throws {
-        let manager = try await self.getManager()
+        let manager = try await self.getManager(true)
         try await self.save(manager)
         try manager.connection.startVPNTunnel(options: ["node": node as NSString])
     }
