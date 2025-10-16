@@ -21,6 +21,8 @@ public enum NEStatus: Int,Sendable {
 //    case realConnected = 800
 //    case realFaile = 900
     
+    case invalid
+    
     case disconnecting
     case disconnected
     
