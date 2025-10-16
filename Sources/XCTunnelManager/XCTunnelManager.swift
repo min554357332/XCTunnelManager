@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 @preconcurrency import NetworkExtension
 @preconcurrency import Combine
 import XCEvents
@@ -71,6 +71,23 @@ public actor XCTunnelManager {
     }
     
     private var manager: NEVPNManager?
+    
+    static func asyncStatusStream() -> AsyncStream<NEVPNStatus> {
+        AsyncStream<NEVPNStatus> { continuation in
+            let observer = NotificationCenter.default.addObserver(
+                forName: .NEVPNStatusDidChange,
+                object: nil,
+                queue: .main
+            ) { notification in
+                let vpnStatus = (notification.object as? NEVPNConnection)?.status ?? .disconnected
+                continuation.yield(vpnStatus)
+            }
+            
+            continuation.onTermination = { _ in
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
+    }
 }
 
 public extension XCTunnelManager {
@@ -190,6 +207,12 @@ public extension XCTunnelManager {
     func stop() async throws {
         Events.disconnect.fire()
         try await self.getManager().connection.stopVPNTunnel()
+        let stream = XCTunnelManager.asyncStatusStream()
+        for await status in stream {
+            if status == .disconnected {
+                return
+            }
+        }
     }
     
     func stopAll() async throws {
