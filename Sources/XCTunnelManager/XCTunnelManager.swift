@@ -127,9 +127,6 @@ public extension XCTunnelManager {
             manager = try await self.create()
         }
         try await self.save(manager)
-        if isCreate {
-            Events.connect_session_start.fire()
-        }
         manager = try await NETunnelProviderManager.loadAllFromPreferences().last
         self.manager = manager
         let status = self.manager?.connection.status ?? .invalid
@@ -176,7 +173,6 @@ public extension XCTunnelManager {
 
 private extension XCTunnelManager {
     func create() async throws -> NETunnelProviderManager {
-        Events.connect_session_start_before.fire()
         let manager = NETunnelProviderManager()
         let p = NETunnelProviderProtocol()
         p.serverAddress = "UnlimitedVPNMaster"
