@@ -98,6 +98,9 @@ public extension XCTunnelManager {
         manager = try await NETunnelProviderManager.loadAllFromPreferences().last
         self.manager = manager
         await self.statusUpdate(manager?.connection.status ?? .invalid)
+        let status = self.manager?.connection.status ?? .invalid
+        let nestatus = NEStatus(rawValue: status.rawValue) ?? .invalid
+        await self.setStatus(nestatus)
     }
     
     func enable() async throws {
@@ -116,7 +119,14 @@ public extension XCTunnelManager {
     
     @MainActor
     func getStatus() async -> NEStatus {
-        return self.status
+//        return self.status
+        do {
+            let status = try await self.getManager().connection.status
+            let nestatus = NEStatus(rawValue: status.rawValue) ?? .disconnected
+            return nestatus
+        } catch {
+            return self.status
+        }
     }
     
     @MainActor
